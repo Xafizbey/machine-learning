@@ -1,5 +1,9 @@
+"use client";
+
 import { Metadata } from "next";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -8,12 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search } from "lucide-react";
-
-export const metadata: Metadata = {
-  title: "Глоссарий | ML - Обучение машинному обучению",
-  description: "Словарь терминов и определений по машинному обучению",
-};
+import { Search, Lightbulb, Filter, BookOpenText } from "lucide-react";
+import { useState } from "react";
 
 // Словарь терминов
 const glossaryItems = [
@@ -152,62 +152,123 @@ const glossaryItems = [
 ];
 
 export default function GlossaryPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  
   // Сортируем термины по алфавиту
   const sortedGlossary = [...glossaryItems].sort((a, b) =>
     a.term.localeCompare(b.term, "ru-RU")
   );
 
-  // Фильтруем термины по категории
-  // const filterGlossary = (category: string) => {
-  //   return glossaryItems.filter((item) => item.category === category);
-  // };
+  // Фильтруем термины по поиску и категории
+  const filteredGlossary = sortedGlossary.filter((item) => {
+    const matchesSearch = searchQuery === "" || 
+      item.term.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.definition.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
+
+  // Категории терминов
+  const categories = [
+    { value: "all", label: "Все термины", count: glossaryItems.length },
+    { value: "basic", label: "Основные", count: glossaryItems.filter(i => i.category === "basic").length },
+    { value: "neural", label: "Нейронные сети", count: glossaryItems.filter(i => i.category === "neural").length },
+    { value: "method", label: "Методы", count: glossaryItems.filter(i => i.category === "method").length },
+    { value: "advanced", label: "Продвинутые", count: glossaryItems.filter(i => i.category === "advanced").length },
+  ];
   
   return (
     <div className="container py-10">
-      <div className="mx-auto max-w-3xl text-center mb-10">
-        <h1 className="text-4xl font-bold tracking-tight mb-4">Глоссарий</h1>
-        <p className="text-muted-foreground text-lg">
-          Словарь ключевых терминов и понятий в области машинного обучения и
-          искусственного интеллекта
-        </p>
+      {/* Hero Section */}
+      <div className="relative mb-8 md:mb-12 py-8 md:py-12 rounded-2xl md:rounded-3xl overflow-hidden mx-4">
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-purple-500/10 to-blue-500/10"></div>
+        <div className="relative mx-auto max-w-3xl text-center px-4">
+          <Badge variant="outline" className="mb-3 md:mb-4 text-xs md:text-sm">
+            <Lightbulb className="mr-1 md:mr-2 h-3 w-3" />
+            {glossaryItems.length} терминов
+          </Badge>
+          <h1 className="text-3xl font-bold tracking-tight mb-3 md:mb-4 md:text-4xl lg:text-5xl">
+            <span className="gradient-text">Глоссарий</span> ML
+          </h1>
+          <p className="text-muted-foreground text-sm md:text-base lg:text-lg leading-relaxed">
+            Словарь ключевых терминов и понятий в области машинного обучения и искусственного интеллекта
+          </p>
+        </div>
       </div>
 
-      <div className="max-w-4xl mx-auto mb-8">
+      {/* Search Bar */}
+      <div className="max-w-2xl mx-auto mb-8 md:mb-12 px-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 md:h-5 md:w-5" />
           <Input
-            className="pl-10"
-            placeholder="Найти термин..."
-            id="search-glossary"
-            // onChange={(e) => filterGlossary(e.target.value)}
+            type="text"
+            placeholder="Поиск терминов..."
+            className="pl-10 md:pl-12 pr-4 py-3 md:py-6 text-sm md:text-base rounded-xl border-2 focus:border-pink-500 transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
-          В глоссарии содержится {glossaryItems.length} терминов и определений.
+        <p className="mt-2 md:mt-3 text-xs md:text-sm text-muted-foreground text-center">
+          Найдено: {filteredGlossary.length} из {glossaryItems.length} терминов
         </p>
       </div>
 
-      <div className="max-w-4xl mx-auto">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead className="w-1/3">Термин</TableHead>
-              <TableHead>Определение</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedGlossary.map((item, index) => (
-              <TableRow
-                key={index}
-                className="hover:bg-muted/30 transition-colors"
+      {/* Category Tabs */}
+      <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="max-w-6xl mx-auto px-4">
+        <div className="flex justify-center mb-8 md:mb-10 overflow-x-auto">
+          <TabsList className="grid grid-cols-5 w-full max-w-3xl h-auto p-1">
+            {categories.map((cat) => (
+              <TabsTrigger 
+                key={cat.value} 
+                value={cat.value}
+                className="data-[state=active]:bg-pink-500/10 data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 py-2 md:py-3 flex flex-col gap-0.5 md:gap-1"
               >
-                <TableCell className="font-medium">{item.term}</TableCell>
-                <TableCell>{item.definition}</TableCell>
-              </TableRow>
+                <span className="text-xs md:text-sm font-medium whitespace-nowrap">{cat.label}</span>
+                <span className="text-[10px] md:text-xs opacity-70">{cat.count}</span>
+              </TabsTrigger>
             ))}
-          </TableBody>
-        </Table>
+          </TabsList>
+        </div>
+
+        <TabsContent value={selectedCategory} className="max-w-5xl mx-auto">
+          {filteredGlossary.length > 0 ? (
+            <div className="grid gap-4">
+              {filteredGlossary.map((item, index) => (
+                <div
+                  key={index}
+                  className="group p-6 rounded-xl border border-border bg-card hover:shadow-lg hover:border-pink-500/50 transition-all hover:scale-[1.01]"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold mb-2 group-hover:text-pink-600 dark:group-hover:text-pink-400 transition-colors">
+                        {item.term}
+                      </h3>
+                      <p className="text-muted-foreground leading-relaxed">
+                        {item.definition}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="shrink-0">
+                      {item.category === "basic" && "Основы"}
+                      {item.category === "neural" && "НС"}
+                      {item.category === "method" && "Методы"}
+                      {item.category === "advanced" && "Продвинутые"}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <BookOpenText className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground text-lg mb-2">Термины не найдены</p>
+              <p className="text-sm text-muted-foreground">Попробуйте изменить поисковый запрос или выберите другую категорию</p>
       </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

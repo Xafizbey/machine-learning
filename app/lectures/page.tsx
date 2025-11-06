@@ -1,11 +1,12 @@
+"use client";
+
 import { Metadata } from "next";
 import FileCard from "@/components/file-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-export const metadata: Metadata = {
-  title: "Лекции | ML - Обучение машинному обучению",
-  description: "Теоретические материалы по машинному обучению",
-};
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Search, BookOpen, Filter } from "lucide-react";
+import { useState } from "react";
 
 // Моковые данные для лекций
 const lectures = [
@@ -124,33 +125,76 @@ const lectures = [
 ];
 
 export default function LecturesPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  
   // Группируем лекции по категориям
   const basicLectures = lectures.filter(lecture => lecture.category === "basics");
   const neuralLectures = lectures.filter(lecture => lecture.category === "neural");
   const advancedLectures = lectures.filter(lecture => lecture.category === "advanced");
   
+  // Функция поиска
+  const filterLectures = (lecturesList: typeof lectures) => {
+    if (!searchQuery) return lecturesList;
+    return lecturesList.filter(lecture => 
+      lecture.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lecture.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  };
+  
   return (
     <div className="container py-10">
-      <div className="mx-auto max-w-3xl text-center mb-12">
-        <h1 className="text-4xl font-bold tracking-tight mb-4">Лекции</h1>
-        <p className="text-muted-foreground text-lg">
-          Теоретические материалы по машинному обучению, алгоритмам и нейронным сетям
-        </p>
+      {/* Hero Section */}
+      <div className="relative mb-8 md:mb-12 py-8 md:py-12 rounded-2xl md:rounded-3xl overflow-hidden mx-4">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10"></div>
+        <div className="relative mx-auto max-w-3xl text-center px-4">
+          <Badge variant="outline" className="mb-3 md:mb-4 text-xs md:text-sm">
+            <BookOpen className="mr-1 md:mr-2 h-3 w-3" />
+            14 лекций доступно
+          </Badge>
+          <h1 className="text-3xl font-bold tracking-tight mb-3 md:mb-4 md:text-4xl lg:text-5xl">
+            <span className="gradient-text">Лекции</span> по ML
+          </h1>
+          <p className="text-muted-foreground text-sm md:text-base lg:text-lg leading-relaxed">
+            Теоретические материалы по машинному обучению, алгоритмам и нейронным сетям
+          </p>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="max-w-2xl mx-auto mb-8 md:mb-12 px-4">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 md:h-5 md:w-5" />
+          <Input
+            type="text"
+            placeholder="Поиск по лекциям..."
+            className="pl-10 md:pl-12 pr-4 py-3 md:py-6 text-sm md:text-base rounded-xl border-2 focus:border-purple-500 transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
       
-      <Tabs defaultValue="all" className="max-w-5xl mx-auto">
-        <div className="flex justify-center mb-8">
-          <TabsList>
-            <TabsTrigger value="all">Все лекции</TabsTrigger>
-            <TabsTrigger value="basics">Основы ML</TabsTrigger>
-            <TabsTrigger value="neural">Нейронные сети</TabsTrigger>
-            <TabsTrigger value="advanced">Продвинутые темы</TabsTrigger>
+      <Tabs defaultValue="all" className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-center mb-8 md:mb-10 overflow-x-auto">
+          <TabsList className="grid grid-cols-4 w-full max-w-2xl h-auto p-1">
+            <TabsTrigger value="all" className="data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 py-2 md:py-3 text-xs md:text-sm">
+              Все
+            </TabsTrigger>
+            <TabsTrigger value="basics" className="data-[state=active]:bg-blue-500/10 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 py-2 md:py-3 text-xs md:text-sm">
+              Основы
+            </TabsTrigger>
+            <TabsTrigger value="neural" className="data-[state=active]:bg-pink-500/10 data-[state=active]:text-pink-600 dark:data-[state=active]:text-pink-400 py-2 md:py-3 text-xs md:text-sm">
+              НС
+            </TabsTrigger>
+            <TabsTrigger value="advanced" className="data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-600 dark:data-[state=active]:text-amber-400 py-2 md:py-3 text-xs md:text-sm">
+              Продвин.
+            </TabsTrigger>
           </TabsList>
         </div>
         
         <TabsContent value="all" className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {lectures.map((lecture) => (
+            {filterLectures(lectures).map((lecture) => (
               <FileCard
                 key={lecture.id}
                 number={lecture.id}
@@ -160,12 +204,21 @@ export default function LecturesPage() {
                 fileUrl={lecture.fileUrl}
               />
             ))}
-          </div>``
+          </div>
+          {filterLectures(lectures).length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground text-lg">Лекции не найдены</p>
+            </div>
+          )}
         </TabsContent>
       
         <TabsContent value="basics" className="space-y-8">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Основы ML</h2>
+            <Badge variant="outline">{filterLectures(basicLectures).length} лекций</Badge>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {basicLectures.map((lecture) => (
+            {filterLectures(basicLectures).map((lecture) => (
               <FileCard
                 key={lecture.id}
                 number={lecture.id}
@@ -176,11 +229,20 @@ export default function LecturesPage() {
               />
             ))}
           </div>
+          {filterLectures(basicLectures).length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground text-lg">Лекции не найдены</p>
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="neural" className="space-y-8">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Нейронные сети</h2>
+            <Badge variant="outline">{filterLectures(neuralLectures).length} лекций</Badge>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {neuralLectures.map((lecture) => (
+            {filterLectures(neuralLectures).map((lecture) => (
               <FileCard
                 key={lecture.id}
                 number={lecture.id}
@@ -191,11 +253,20 @@ export default function LecturesPage() {
               />
             ))}
           </div>
+          {filterLectures(neuralLectures).length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground text-lg">Лекции не найдены</p>
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="advanced" className="space-y-8">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Продвинутые темы</h2>
+            <Badge variant="outline">{filterLectures(advancedLectures).length} лекций</Badge>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {advancedLectures.map((lecture) => (
+            {filterLectures(advancedLectures).map((lecture) => (
               <FileCard
                 key={lecture.id}
                 number={lecture.id}
@@ -206,6 +277,11 @@ export default function LecturesPage() {
               />
             ))}
           </div>
+          {filterLectures(advancedLectures).length === 0 && (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground text-lg">Лекции не найдены</p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
